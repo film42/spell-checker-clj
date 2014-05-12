@@ -1,6 +1,7 @@
 (ns spell-checker.core
   (:use [spell-checker.interfaces])
   (:use [spell-checker.transformations])
+  (:require [clojure.java.io :as io])
   (:require [clojure.string :as s]))
 
 (deftype Spelling
@@ -24,13 +25,11 @@
 
   (use-dictionary
     [this path]
-    (let [d (slurp path)
-          ws (->> (s/split d #"\n")
-                     (map #(s/replace % #"\s" "")))]
-      (doseq [word ws]
-        (swap! dict #(if-not (nil? (% %2))
-                          (conj % {%2 (inc (% %2))})
-                          (conj % {%2 1})) word))))
+    (time  (with-open [rdr (io/reader path)]
+              (doseq [word (line-seq rdr)]
+                (swap! dict #(if-not (nil? (% %2))
+                               (conj % {%2 (inc (% %2))})
+                               (conj % {%2 1})) word)))))
 
   (suggest-word [this word]
     (if-not (nil? (@dict word))
